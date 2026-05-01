@@ -530,6 +530,7 @@ def serve(
         consolidation_ratio=runtime_config.agents.defaults.consolidation_ratio,
         max_messages=runtime_config.agents.defaults.max_messages,
         tools_config=runtime_config.tools,
+        session_extra_config=runtime_config.agents.defaults.session_extra,
     )
 
     model_name = runtime_config.agents.defaults.model
@@ -644,6 +645,7 @@ def _run_gateway(
         consolidation_ratio=config.agents.defaults.consolidation_ratio,
         max_messages=config.agents.defaults.max_messages,
         tools_config=config.tools,
+        session_extra_config=config.agents.defaults.session_extra,
         provider_snapshot_loader=load_provider_snapshot,
         provider_signature=provider_snapshot.signature,
     )
@@ -1035,6 +1037,7 @@ def agent(
         consolidation_ratio=config.agents.defaults.consolidation_ratio,
         max_messages=config.agents.defaults.max_messages,
         tools_config=config.tools,
+        session_extra_config=config.agents.defaults.session_extra,
     )
     restart_notice = consume_restart_notice_from_env()
     if restart_notice and should_show_cli_restart_notice(restart_notice, session_id):

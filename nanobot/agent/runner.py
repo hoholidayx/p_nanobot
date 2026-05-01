@@ -50,6 +50,14 @@ _COMPACTABLE_TOOLS = frozenset({
 })
 _BACKFILL_CONTENT = "[Tool result unavailable — call was interrupted or lost]"
 
+# Normalised message field names — centralised so that filtering and context
+# governance look them up in one place instead of hardcoding string literals.
+_MSG_ROLE = "role"
+_MSG_TOOL_CALLS = "tool_calls"
+_MSG_REASONING = "reasoning_content"
+_MSG_THINKING_BLOCKS = "thinking_blocks"
+_ROLE_TOOL = "tool"
+_ROLE_ASSISTANT = "assistant"
 
 
 @dataclass(slots=True)
@@ -79,6 +87,8 @@ class AgentRunSpec:
     checkpoint_callback: Any | None = None
     injection_callback: Any | None = None
     llm_timeout_s: float | None = None
+    send_tool_messages: bool = True  # Include tool call/result messages in LLM context
+    send_thinking: bool = True  # Include reasoning/thinking content in LLM context
 
 
 @dataclass(slots=True)
@@ -117,6 +127,37 @@ class AgentRunner:
             return [{"type": "text", "text": str(value)}]
 
         return _to_blocks(left) + _to_blocks(right)
+
+    @staticmethod
+    def _filter_session_extra(
+        messages: list[dict[str, Any]],
+        send_tool_messages: bool,
+        send_thinking: bool,
+    ) -> list[dict[str, Any]]:
+        """Filter messages for LLM according to session_extra config.
+
+        When *send_tool_messages* is False, tool-call assistant messages and
+        tool-result messages are stripped so the LLM only sees user/assistant
+        text content.
+
+        When *send_thinking* is False, ``reasoning_content`` and
+        ``thinking_blocks`` are removed from every message.
+        """
+        if send_tool_messages and send_thinking:
+            return messages
+
+        filtered: list[dict[str, Any]] = []
+        for msg in messages:
+            m = dict(msg)  # shallow copy — never mutate originals
+            if not send_thinking:
+                m.pop(_MSG_REASONING, None)
+                m.pop(_MSG_THINKING_BLOCKS, None)
+            if not send_tool_messages:
+                if m.get(_MSG_ROLE) == _ROLE_TOOL:
+                    continue  # drop tool-result messages entirely
+                m.pop(_MSG_TOOL_CALLS, None)  # drop tool-call requests from assistant
+            filtered.append(m)
+        return filtered
 
     @classmethod
     def _append_injected_messages(
@@ -250,14 +291,19 @@ class AgentRunner:
                 # may repair or compact historical messages for the model, but
                 # those synthetic edits must not shift the append boundary used
                 # later when the caller saves only the new turn.
-                messages_for_model = self._drop_orphan_tool_results(messages)
-                messages_for_model = self._backfill_missing_tool_results(messages_for_model)
-                messages_for_model = self._microcompact(messages_for_model)
-                messages_for_model = self._apply_tool_result_budget(spec, messages_for_model)
+                if spec.send_tool_messages:
+                    messages_for_model = self._drop_orphan_tool_results(messages)
+                    messages_for_model = self._backfill_missing_tool_results(messages_for_model)
+                    messages_for_model = self._microcompact(messages_for_model)
+                    messages_for_model = self._apply_tool_result_budget(spec, messages_for_model)
+                else:
+                    # Tool data is excluded —— skip tool-only governance entirely.
+                    messages_for_model = list(messages)
                 messages_for_model = self._snip_history(spec, messages_for_model)
-                # Snipping may have created new orphans; clean them up.
-                messages_for_model = self._drop_orphan_tool_results(messages_for_model)
-                messages_for_model = self._backfill_missing_tool_results(messages_for_model)
+                if spec.send_tool_messages:
+                    # Snipping may have created new orphans; clean them up.
+                    messages_for_model = self._drop_orphan_tool_results(messages_for_model)
+                    messages_for_model = self._backfill_missing_tool_results(messages_for_model)
             except Exception as exc:
                 logger.warning(
                     "Context governance failed on turn {} for {}: {}; applying minimal repair",
@@ -266,10 +312,18 @@ class AgentRunner:
                     exc,
                 )
                 try:
-                    messages_for_model = self._drop_orphan_tool_results(messages)
-                    messages_for_model = self._backfill_missing_tool_results(messages_for_model)
+                    if spec.send_tool_messages:
+                        messages_for_model = self._drop_orphan_tool_results(messages)
+                        messages_for_model = self._backfill_missing_tool_results(messages_for_model)
+                    else:
+                        messages_for_model = list(messages)
                 except Exception:
                     messages_for_model = messages
+            messages_for_model = self._filter_session_extra(
+                messages_for_model,
+                send_tool_messages=spec.send_tool_messages,
+                send_thinking=spec.send_thinking,
+            )
             context = AgentHookContext(iteration=iteration, messages=messages)
             await hook.before_iteration(context)
             response = await self._request_model(spec, messages_for_model, hook, context)

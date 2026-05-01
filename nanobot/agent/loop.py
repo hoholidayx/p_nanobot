@@ -41,7 +41,7 @@ from nanobot.agent.tools.web import WebFetchTool, WebSearchTool
 from nanobot.bus.events import InboundMessage, OutboundMessage
 from nanobot.bus.queue import MessageBus
 from nanobot.command import CommandContext, CommandRouter, register_builtin_commands
-from nanobot.config.schema import AgentDefaults
+from nanobot.config.schema import AgentDefaults, SessionExtraConfig
 from nanobot.providers.base import LLMProvider
 from nanobot.providers.factory import ProviderSnapshot
 from nanobot.session.manager import Session, SessionManager
@@ -210,6 +210,7 @@ class AgentLoop:
         tools_config: ToolsConfig | None = None,
         provider_snapshot_loader: Callable[[], ProviderSnapshot] | None = None,
         provider_signature: tuple[object, ...] | None = None,
+        session_extra_config: SessionExtraConfig | None = None,
     ):
         from nanobot.config.schema import ExecToolConfig, ToolsConfig, WebToolsConfig
 
@@ -266,6 +267,8 @@ class AgentLoop:
         )
         self._unified_session = unified_session
         self._max_messages = max_messages if max_messages > 0 else 120
+        self._send_tool_messages = session_extra_config.send_tool_messages if session_extra_config else True
+        self._send_thinking = session_extra_config.send_thinking if session_extra_config else True
         self._running = False
         self._mcp_servers = mcp_servers or {}
         self._mcp_stacks: dict[str, AsyncExitStack] = {}
@@ -645,6 +648,8 @@ class AgentLoop:
                 retry_wait_callback=on_retry_wait,
                 checkpoint_callback=_checkpoint,
                 injection_callback=_drain_pending,
+                send_tool_messages=self._send_tool_messages,
+                send_thinking=self._send_thinking,
             ))
         finally:
             reset_file_states(file_state_token)

@@ -1080,3 +1080,25 @@ Disabled skills are excluded from the main agent's skill summary, from always-on
 | Option | Default | Description |
 |--------|---------|-------------|
 | `agents.defaults.disabledSkills` | `[]` | List of skill directory names to exclude from loading. Applies to both built-in skills and workspace skills. |
+
+## Session Extra
+
+Controls which historical session data is sent back to the LLM in subsequent turns. By default all data is included. Disabling these can reduce token usage or prevent the LLM from seeing internal reasoning when it is not needed.
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "sessionExtra": {
+        "sendToolMessages": false,
+        "sendThinking": false
+      }
+    }
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `agents.defaults.sessionExtra.sendToolMessages` | `true` | If `false`, tool call requests and tool execution results are stripped from the context sent to the LLM. Only user and assistant text messages are retained. |
+| `agents.defaults.sessionExtra.sendThinking` | `true` | If `false`, `reasoning_content` and `thinking_blocks` are removed from all messages before sending to the LLM. |

@@ -65,6 +65,13 @@ class DreamConfig(Base):
         return f"every {hours}h"
 
 
+class SessionExtraConfig(Base):
+    """Controls which historical session data is sent back to the LLM."""
+
+    send_tool_messages: bool = True  # Include tool call/result messages in LLM context
+    send_thinking: bool = True  # Include reasoning/thinking content in LLM context
+
+
 class AgentDefaults(Base):
     """Default agent configuration."""
 
@@ -102,6 +109,7 @@ class AgentDefaults(Base):
         serialization_alias="consolidationRatio",
     )  # Consolidation target ratio (0.5 = 50% of budget retained after compression)
     dream: DreamConfig = Field(default_factory=DreamConfig)
+    session_extra: SessionExtraConfig = Field(default_factory=SessionExtraConfig)
 
 
 class AgentsConfig(Base):
