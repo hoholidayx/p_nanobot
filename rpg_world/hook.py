@@ -1,10 +1,7 @@
 """RPG World agent hook — a concrete AgentHook subclass.
 
 Hooks implemented:
-  1. ``on_system_prompt_built`` — receives the assembled system prompt
-     (AGENTS.md, SOUL.md, USER.md, TOOLS.md, etc.) and the full message
-     list, so it can inject RPG flavour or mutate the world context.
-  2. ``before_iteration`` — receives the actual ``messages_for_model``
+  1. `before_iteration`` — receives the actual ``messages_for_model``
      (the filtered/processed messages that will be sent to the LLM),
      allowing per-turn inspection or modification.
 """

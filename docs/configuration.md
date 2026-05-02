@@ -1131,3 +1131,4 @@ Controls which historical session data is sent back to the LLM in subsequent tur
 |--------|---------|-------------|
 | `agents.defaults.sessionExtra.sendToolMessages` | `true` | If `false`, tool call requests and tool execution results are stripped from the context sent to the LLM. Only user and assistant text messages are retained. |
 | `agents.defaults.sessionExtra.sendThinking` | `true` | If `false`, `reasoning_content` and `thinking_blocks` are removed from all messages before sending to the LLM. |
+| `agents.defaults.sessionExtra.enableRpgHooks` | `false` | If `true`, injects the RpgWorldHook into the agent's hook list. |

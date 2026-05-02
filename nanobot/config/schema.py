@@ -70,6 +70,7 @@ class SessionExtraConfig(Base):
 
     send_tool_messages: bool = True  # Include tool call/result messages in LLM context
     send_thinking: bool = True  # Include reasoning/thinking content in LLM context
+    enable_rpg_hooks: bool = False  # Inject RpgWorldHook into agent hooks
 
 
 class AgentDefaults(Base):

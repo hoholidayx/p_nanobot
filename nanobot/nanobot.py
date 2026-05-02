@@ -87,7 +87,7 @@ class Nanobot:
             consolidation_ratio=defaults.consolidation_ratio,
             tools_config=config.tools,
             session_extra_config=defaults.session_extra,
-            hooks=_rpg_hooks(),
+            hooks=_rpg_hooks(enable=defaults.session_extra.enable_rpg_hooks),
         )
         return cls(loop)
 

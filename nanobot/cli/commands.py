@@ -532,7 +532,7 @@ def serve(
         max_messages=runtime_config.agents.defaults.max_messages,
         tools_config=runtime_config.tools,
         session_extra_config=runtime_config.agents.defaults.session_extra,
-        hooks=_rpg_hooks(),
+        hooks=_rpg_hooks(enable=runtime_config.agents.defaults.session_extra.enable_rpg_hooks),
     )
 
     model_name = runtime_config.agents.defaults.model
@@ -648,7 +648,7 @@ def _run_gateway(
         max_messages=config.agents.defaults.max_messages,
         tools_config=config.tools,
         session_extra_config=config.agents.defaults.session_extra,
-        hooks=_rpg_hooks(),
+        hooks=_rpg_hooks(enable=config.agents.defaults.session_extra.enable_rpg_hooks),
         provider_snapshot_loader=load_provider_snapshot,
         provider_signature=provider_snapshot.signature,
     )
@@ -1041,7 +1041,7 @@ def agent(
         max_messages=config.agents.defaults.max_messages,
         tools_config=config.tools,
         session_extra_config=config.agents.defaults.session_extra,
-        hooks=_rpg_hooks(),
+        hooks=_rpg_hooks(enable=config.agents.defaults.session_extra.enable_rpg_hooks),
     )
     restart_notice = consume_restart_notice_from_env()
     if restart_notice and should_show_cli_restart_notice(restart_notice, session_id):
