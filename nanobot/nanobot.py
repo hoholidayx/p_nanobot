@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from nanobot.agent.hook import AgentHook
+from nanobot.agent.hook import AgentHook, _rpg_hooks
 from nanobot.agent.loop import AgentLoop
 from nanobot.bus.queue import MessageBus
 
@@ -87,6 +87,7 @@ class Nanobot:
             consolidation_ratio=defaults.consolidation_ratio,
             tools_config=config.tools,
             session_extra_config=defaults.session_extra,
+            hooks=_rpg_hooks(),
         )
         return cls(loop)
 

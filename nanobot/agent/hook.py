@@ -102,3 +102,16 @@ class CompositeHook(AgentHook):
         for h in self._hooks:
             content = h.finalize_content(context, content)
         return content
+
+
+def _rpg_hooks() -> list[AgentHook]:
+    """Return a list with RpgWorldHook when available, else empty list.
+
+    Convenience helper for entry points — use as ``hooks=_rpg_hooks()``
+    when constructing ``AgentLoop``.
+    """
+    try:
+        from rpg_world import RpgWorldHook  # type: ignore[import-untyped]
+        return [RpgWorldHook()]
+    except ImportError:
+        return []
