@@ -324,7 +324,7 @@ class AgentRunner:
                 send_tool_messages=spec.send_tool_messages,
                 send_thinking=spec.send_thinking,
             )
-            context = AgentHookContext(iteration=iteration, messages=messages)
+            context = AgentHookContext(iteration=iteration, messages=messages_for_model)
             await hook.before_iteration(context)
             response = await self._request_model(spec, messages_for_model, hook, context)
             raw_usage = self._usage_dict(response.usage)
