@@ -591,6 +591,13 @@ class AgentLoop:
                     self._runtime_chat_id(pending_msg),
                     self.context.timezone,
                 )
+                # Let hooks replace the runtime context entirely
+                runtime_ctx = hook.on_build_runtime_context(
+                    pending_msg.channel,
+                    self._runtime_chat_id(pending_msg),
+                    self.context.timezone,
+                    runtime_ctx,
+                )
                 if isinstance(user_content, str):
                     merged: str | list[dict[str, Any]] = f"{runtime_ctx}\n\n{user_content}"
                 else:

@@ -51,6 +51,20 @@ class AgentHook:
     async def after_iteration(self, context: AgentHookContext) -> None:
         pass
 
+    def on_build_runtime_context(self, channel: str, chat_id: str, timezone: str, runtime_ctx: str) -> str:
+        """Return the new runtime context, replacing the original.
+
+        Args:
+            channel: The message channel.
+            chat_id: The chat identifier.
+            timezone: The session timezone.
+            runtime_ctx: The current runtime context string to be replaced.
+
+        Returns:
+            The new runtime context string. Return runtime_ctx unchanged if no modification needed.
+        """
+        return runtime_ctx
+
     def finalize_content(self, context: AgentHookContext, content: str | None) -> str | None:
         return content
 
@@ -98,6 +112,15 @@ class CompositeHook(AgentHook):
     async def after_iteration(self, context: AgentHookContext) -> None:
         await self._for_each_hook_safe("after_iteration", context)
 
+    def on_build_runtime_context(self, channel: str, chat_id: str, timezone: str, runtime_ctx: str) -> str:
+        result = runtime_ctx
+        for h in self._hooks:
+            try:
+                result = h.on_build_runtime_context(channel, chat_id, timezone, result)
+            except Exception:
+                logger.exception("AgentHook.on_build_runtime_context error in {}", type(h).__name__)
+        return result
+
     def finalize_content(self, context: AgentHookContext, content: str | None) -> str | None:
         for h in self._hooks:
             content = h.finalize_content(context, content)
@@ -113,7 +136,7 @@ def rpg_hooks(enable: bool = False) -> list[AgentHook]:
     if not enable:
         return []
     try:
-        from rpg_core import RpgWorldHook  # type: ignore[import-untyped]
+        from rpg_world.rpg_core.hook.hook import RpgWorldHook  # type: ignore[import-untyped]
         return [RpgWorldHook()]
     except ImportError:
         return []

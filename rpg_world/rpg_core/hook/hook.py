@@ -22,24 +22,9 @@ class RpgWorldHook(AgentHook):
         self.system_prompt: str | None = None
 
     async def before_iteration(self, context: AgentHookContext) -> None:
-        """Log what is about to be sent to the model."""
-        user_text = ""
-        for msg in reversed(context.messages):
-            if msg.get("role") == "user":
-                content = msg.get("content", "")
-                if isinstance(content, str):
-                    user_text = content[:120]
-                elif isinstance(content, list):
-                    for part in content:
-                        if isinstance(part, dict) and part.get("type") == "text":
-                            user_text = part["text"][:120]
-                            break
-                break
+        """Remove system messages from context."""
+        context.messages = [msg for msg in context.messages if msg.get("role") != "system"]
 
-        tool_count = len(context.tool_calls)
-        print(
-            f"[RpgWorld] Iteration {context.iteration} — "
-            f"messages={len(context.messages)}, "
-            f"last_user={user_text!r}, "
-            f"pending_tools={tool_count}"
-        )
+    def on_build_runtime_context(self, channel: str, chat_id: str, timezone: str, runtime_ctx: str) -> str:
+        """Inject RPG World context into the runtime context."""
+        return f"{runtime_ctx}\n\n[RPG World: {self.world_name}]"

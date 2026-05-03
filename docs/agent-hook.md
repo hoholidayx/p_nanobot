@@ -66,6 +66,7 @@ class MyHook(AgentHook):
 | `before_iteration(ctx)` | 每次 LLM 调用之前 | 异步 | 可修改 `messages` |
 | `on_stream(ctx, delta)` | 流式模式下每收到 token 增量 | 异步 | 只读观察 |
 | `on_stream_end(ctx, *, resuming)` | 流式结束 | 异步 | 只读观察 |
+| `on_build_runtime_context(channel, chat_id, timezone, runtime_ctx)` | 构建用户消息的运行时上下文时 | 同步 | 返回的字符串将替代原运行时上下文 |
 | `before_execute_tools(ctx)` | 执行工具之前 | 异步 | 可拦截/修改 `tool_calls` |
 | `after_iteration(ctx)` | 每次迭代结束 | 异步 | 可记录状态 |
 | `finalize_content(ctx, content)` | 返回最终内容前 | 同步 | 返回的内容将替代原内容 |
@@ -88,6 +89,20 @@ LLM 调用前触发。可以在此：
 注意：此方法仅在 `wants_streaming()` 返回 `True` 时才会被调用。
 
 `resuming=True` 表示流结束后仍有后续（如工具调用即将发生），`resuming=False` 表示这是最终回复。
+
+#### `on_build_runtime_context(channel: str, chat_id: str, timezone: str, runtime_ctx: str) -> str`
+构建用户消息的运行时上下文时触发。在 mid-turn injection 场景下，从 pending queue 中取出用户消息构建 prompt 时调用。
+
+这是一个**同步管道**——所有 hook 的 `on_build_runtime_context` 会链式执行，前一个的输出作为后一个的输入。适合在此：
+
+- 注入额外上下文（如 RPG World 信息）
+- 修改运行时环境描述
+- 按 channel/chat_id 定制上下文
+
+```python
+def on_build_runtime_context(self, channel, chat_id, timezone, runtime_ctx):
+    return f"{runtime_ctx}\n\n[Custom Context]"
+```
 
 #### `async before_execute_tools(context: AgentHookContext)`
 LLM 返回工具调用请求后、实际执行工具前触发。可以在此：
@@ -225,6 +240,6 @@ await runner.run(AgentRunSpec(hook=hook, ...))
 ## 注意事项
 
 1. **异常隔离**：自定义 hook 抛异常默认不会导致 agent 崩溃（catch 后只记日志）。核心 hook（`_LoopHook`）设置 `reraise=True` 例外。
-2. **同步/异步区分**：`finalize_content` 是同步方法（性能敏感），其余生命周期方法均为异步。
+2. **同步/异步区分**：`finalize_content` 和 `on_build_runtime_context` 是同步方法（管道模式，结果依次传递），其余生命周期方法均为异步。
 3. **流式模式**：`on_stream` 仅在 `wants_streaming()` 返回 `True` 时启用。流式和非流式模式对 hook 体系透明。
 4. **context 可变**：修改 `context.messages` 或 `context.tool_calls` 等字段会直接影响后续行为，使用需谨慎。
