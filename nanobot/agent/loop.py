@@ -377,6 +377,8 @@ class AgentLoop:
                     sandbox=self.exec_config.sandbox,
                     path_append=self.exec_config.path_append,
                     allowed_env_keys=self.exec_config.allowed_env_keys,
+                    allow_patterns=self.exec_config.allow_patterns,
+                    deny_patterns=self.exec_config.deny_patterns,
                 )
             )
         if self.web_config.enable:
@@ -805,6 +807,14 @@ class AgentLoop:
                         await self.bus.publish_outbound(OutboundMessage(
                             channel=msg.channel, chat_id=msg.chat_id,
                             content="", metadata=msg.metadata or {},
+                        ))
+                    if msg.channel == "websocket":
+                        # Signal that the turn is fully complete (all tools executed,
+                        # final text streamed).  This lets WS clients know when to
+                        # definitively stop the loading indicator.
+                        await self.bus.publish_outbound(OutboundMessage(
+                            channel=msg.channel, chat_id=msg.chat_id,
+                            content="", metadata={**msg.metadata, "_turn_end": True},
                         ))
                 except asyncio.CancelledError:
                     logger.info("Task cancelled for session {}", session_key)
