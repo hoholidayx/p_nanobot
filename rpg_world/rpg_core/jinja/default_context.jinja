@@ -1,0 +1,24 @@
+{% if character and character.get('enable') %}
+## Character: {{ character.get('name', 'Unknown') }}
+{% if character.get('content') %}
+{{ character.content }}
+{% endif %}
+{% if character.get('personality') %}
+- **Personality**: {{ character.personality }}
+{% endif %}
+{% if character.get('background') %}
+- **Background**: {{ character.background }}
+{% endif %}
+{% endif %}
+
+{% if lorebook.get('entries') %}
+## World Lore
+{% for entry in lorebook.entries if entry.get('enable') %}
+### {{ entry.name }}
+{% if entry.tags %}
+*Tags: {{ entry.tags | join(', ') }}*
+{% endif %}
+
+{{ entry.content }}
+{% endfor %}
+{% endif %}
